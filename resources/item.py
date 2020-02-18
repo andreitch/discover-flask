@@ -15,14 +15,13 @@ class Item(Resource):
   parser.add_argument('price', type=float, required=True, help="Can't be blank")
   parser.add_argument('store_id', type=int, required=True, help="Can't be blank")
 
-  @jwt_required
   def get(self, name):
     item = ItemModel.find_by_name(name)
     if item:
       return {"item": item.json()}, 200
     return {"message": "Item not found"}, 404
 
-  @fresh_jwt_required
+  @jwt_required
   def post(self, name):
     data = self.parser.parse_args()
     item = ItemModel.find_by_name(name)
@@ -33,11 +32,9 @@ class Item(Resource):
       item.save_to_db()
       return {"item": item.json()}, 201
 
-  @jwt_required
-  def delete(self, name):
-    claims = get_jwt_claims()
-    if not claims['is_admin']:
-      return {"message": "Restricted to admins only"}, 400
+  @classmethod
+  @fresh_jwt_required
+  def delete(cls, name):
     item = ItemModel.find_by_name(name)
     if not item:
       return {"message": "Item not found"}, 404
@@ -49,20 +46,19 @@ class Item(Resource):
     data = self.parser.parse_args()
     item = ItemModel.find_by_name(name)
     if not item:
-      item = ItemModel(name=name, price=data['price'], store_id=data['store_id'])
+      item = ItemModel(name=name, 
+        price=data['price'], store_id=data['store_id'])
     else:
       item.price = data['price']
+      item.store_id = data['store_id']
     item.save_to_db()
     return {'item': item.json()}, 200
 
 
 class ItemList(Resource):
-  @jwt_optional
+  """Public item listing"""
   def get(self):
-    user_id = get_jwt_identity()
     items = []
-    if user_id:
-      for item in ItemModel.query.all():
-        items.append(item.json())
-      return {'items': items}
-    return {'items': [i.name for i in ItemModel.query.all()]}
+    for item in ItemModel.query.all():
+      items.append(item.json())
+    return {'items': items}, 200

@@ -1,5 +1,5 @@
 from flask_restful import Resource, reqparse
-from flask_jwt_extended import jwt_required, jwt_optional
+from flask_jwt_extended import jwt_required, jwt_optional, fresh_jwt_required
 from models.store import StoreModel
 
 
@@ -8,7 +8,6 @@ class Store(Resource):
   parser = reqparse.RequestParser()
   parser.add_argument('name', type=str, required=True, help="Can't be blank")
 
-  @jwt_required
   def get(self, name):
     store = StoreModel.find_by_name(name)
     if store:
@@ -25,7 +24,7 @@ class Store(Resource):
       store.save_to_db()
       return {"store": store.json()}, 201
 
-  @jwt_required
+  @fresh_jwt_required
   def delete(self, name):
     store = StoreModel.find_by_name(name)
     if not store:
@@ -38,7 +37,6 @@ class Store(Resource):
 
 
 class StoreList(Resource):
-  @jwt_optional
   def get(self):
     stores = []
     for store in StoreModel.query.all():
